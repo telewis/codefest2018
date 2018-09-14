@@ -1,0 +1,96 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: goal-backend-v3
+  namespace: prod
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+         app: goal-backend
+         version: v3
+    spec:
+      containers:
+      - name: goal-backend
+        image: cjvogel1972/goal-backend:0.0.3-SNAPSHOT
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: goal-backend
+    version: v3
+  name: goal-backend-svc-v3
+  namespace: prod
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+    name: http
+  selector:
+    app: goal-backend
+    version: v3
+  type: ClusterIP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: goal-backend-gw
+  namespace: prod
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "goal-backend.istio.toddelewis.net"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: goal-backend-vs
+  namespace: prod
+spec:
+  hosts:
+  - "goal-backend.istio.toddelewis.net"
+  gateways:
+  - goal-backend-gw
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        port:
+          number: 80
+        host: goal-backend-svc-v1
+  - match:
+    - headers:
+        end-user:
+          exact: freddy
+    route:
+    - destination:
+        port:
+          number: 80
+        host: goal-backend-svc-v2
+  - route:
+    - destination:
+        port:
+          number: 80
+        host: goal-backend-svc-v3

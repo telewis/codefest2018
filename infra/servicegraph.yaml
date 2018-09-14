@@ -1,0 +1,33 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: servicegraph-gw
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "servicegraph.istio.toddelewis.net"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: servicegraph-vs
+  namespace: istio-system
+spec:
+  hosts:
+  - "servicegraph.istio.toddelewis.net"
+  gateways:
+  - servicegraph-gw
+  http:
+  - route:
+    - destination:
+        port:
+          number: 8088
+        host: servicegraph
