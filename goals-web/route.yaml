@@ -1,0 +1,51 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: goals-web-gw
+  namespace: prod
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "goals-web.istio.toddelewis.net"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: goals-web-vs
+  namespace: prod
+spec:
+  hosts:
+  - "goals-web.istio.toddelewis.net"
+  gateways:
+  - goals-web-gw
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        port:
+          number: 80
+        host: goals-web-svc-v3
+  - match:
+    - headers:
+        end-user:
+          exact: freddy
+    route:
+    - destination:
+        port:
+          number: 80
+        host: goals-web-svc-v2
+  - route:
+    - destination:
+        port:
+          number: 80
+        host: goals-web-svc-v1
